@@ -11,7 +11,7 @@ import urllib
 """
 API configuration.
 """
-API_HOSTNAME = 'api.formcorp.local'
+API_HOSTNAME = 'api.formcorp.com.au'
 
 # Module constants
 _constants = {
