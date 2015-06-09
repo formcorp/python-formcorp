@@ -141,7 +141,7 @@ def get_token():
 
     # Attempt to return the result from the server
     try:
-        return result['tokens']
+        return result['token']
     except KeyError:
         return False
 
