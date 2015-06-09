@@ -1,5 +1,6 @@
 from collections import OrderedDict
-from hashlib import sha1
+import hashlib
+import base64
 import hmac
 import httplib
 import json
@@ -116,6 +117,7 @@ def call(uri, request_method=None, data=None, headers=None):
 
     # Attempt to decode json result
     res = result.read()
+    print res
     try:
         data = json.loads(res)
     except ValueError:
@@ -206,11 +208,10 @@ def _generate_signature(request_method, uri, data=None):
     obj['data'] = data
     plaintext = json.dumps(obj)
 
+    plaintext = plaintext.replace('": "', '":"').replace('": {', '":{').replace('": [', '":[').replace('/', '\/').replace('", "', '","')
+
     # Encode the string
     encoded = unicode(plaintext, _constants['SIGNATURE_ENCODING'])
 
-    # Hash the signature
-    hashed = hmac.new(_config['private_key'], encoded, sha1)
-    hash = hashed.digest().encode("base64").rstrip('\n')
-
+    hash = base64.b64encode(hmac.new(_config['private_key'], encoded, hashlib.sha1).hexdigest())
     return hash

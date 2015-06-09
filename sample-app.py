@@ -10,7 +10,6 @@ form_id = 0
 
 # Initialise the module
 formcorp.api.init(private_key, public_key)
-formcorp.api.use_ssl(False)
 
 # Set the form id
 formcorp.api.set_form_id(form_id)
