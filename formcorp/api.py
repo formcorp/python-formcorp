@@ -43,8 +43,6 @@ def init(private_key, public_key):
     assert isinstance(private_key, basestring)
     assert isinstance(public_key, basestring)
 
-    global _config
-
     _config['private_key'] = private_key
     _config['public_key'] = public_key
 
@@ -117,7 +115,6 @@ def call(uri, request_method=None, data=None, headers=None):
 
     # Attempt to decode json result
     res = result.read()
-    print res
     try:
         data = json.loads(res)
     except ValueError:
