@@ -30,7 +30,7 @@ _constants = {
 }
 
 # Configuration client can alter
-_config = dict(private_key=None, public_key=None, form_id=None, use_ssl=False)
+_config = dict(private_key=None, public_key=None, form_id=None, use_ssl=True)
 
 
 def init(private_key, public_key):
@@ -150,13 +150,10 @@ def _initialised():
     Checks to see if the API has been properly initialised
     :return: boolean
     """
-    global _config
-
     try:
         assert isinstance(_config['private_key'], basestring)
         assert isinstance(_config['public_key'], basestring)
         assert isinstance(_config['form_id'], int)
-
         return True
     except AssertionError:
         return False
