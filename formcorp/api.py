@@ -12,7 +12,7 @@ import urllib
 """
 API configuration.
 """
-API_HOSTNAME = 'api.formcorp.com.au'
+API_HOSTNAME = 'api.formcorp.vagrant'
 
 # Module constants
 _constants = {
@@ -21,6 +21,7 @@ _constants = {
     'REQUEST_TYPE_GET': 'GET',
     'REQUEST_TYPE_PUT': 'PUT',
     'HEADER_PARAM_AUTHORIZATION': 'Authorization',
+    'HEADER_PARAM_TOKEN': 'Token',
     'HEADER_PARAM_SIGNATURE': 'Signature',
     'HEADER_PARAM_ACCEPT': 'Accept',
     'HEADER_PARAM_BEARER': 'Bearer {0}',
@@ -30,7 +31,7 @@ _constants = {
 }
 
 # Configuration client can alter
-_config = dict(private_key=None, public_key=None, form_id=None, use_ssl=True)
+_config = dict(private_key=None, public_key=None, form_id=None, use_ssl=True, token=None)
 
 
 def init(private_key, public_key):
@@ -92,6 +93,10 @@ def call(uri, request_method=None, data=None, headers=None):
     headers[_constants['HEADER_PARAM_SIGNATURE']] = _generate_signature(request_method, uri, data)
     headers[_constants['HEADER_PARAM_ACCEPT']] = _constants['HEADER_APPLICATION_JSON']
 
+    # Set the token if required
+    if _config['token'] is not None:
+        headers[_constants['HEADER_PARAM_TOKEN']] = _config['token']
+
     # Initialise the connection
     if _config['use_ssl']:
         connection = httplib.HTTPSConnection(API_HOSTNAME)
@@ -101,17 +106,13 @@ def call(uri, request_method=None, data=None, headers=None):
     if request_method.upper() == _constants['REQUEST_TYPE_POST']:
         # Send a POST request
         headers[_constants['HEADER_PARAM_CONTENT_TYPE']] = _constants['HEADER_URL_FORM_ENCODED_TYPE']
-        connection.request(_constants['REQUEST_TYPE_POST'], uri, urllib.urlencode(data), headers)
+        connection.request(_constants['REQUEST_TYPE_POST'], uri, urllib.urlencode(data), headers=headers)
     elif request_method.upper() == _constants['REQUEST_TYPE_GET']:
         # Send a GET request
-        connection.request(_constants['REQUEST_TYPE_GET'], uri, headers)
+        connection.request(_constants['REQUEST_TYPE_GET'], uri, headers=headers)
 
     # Retrieve the results of the request
     result = connection.getresponse()
-
-    # Ensure a valid response was received from the server
-    if result.status != 200:
-        raise Exception("Unable to connect to remote API")
 
     # Attempt to decode json result
     res = result.read()
@@ -120,12 +121,16 @@ def call(uri, request_method=None, data=None, headers=None):
     except ValueError:
         raise Exception("Unable to decode server result")
 
-    return data
+    return {
+        "status" : result.status,
+        "response": data
+    }
 
 
-def get_token():
+def get_token(version='v1'):
     """
     Retrieve a token from the server.
+    :param version:
     :return: string
     """
     if not _initialised():
@@ -136,13 +141,30 @@ def get_token():
         'nonce': _generate_nonce()
     }
 
-    result = call('v1/auth/token', 'POST', post_data)
+    result = call(version + '/auth/token', 'POST', post_data)
 
     # Attempt to return the result from the server
     try:
-        return result['token']
+        if version == 'v1':
+            return result['response']['token']
+        elif version == 'v2':
+            return result['response']['data']['token']
     except KeyError:
         return False
+
+
+def set_token(token):
+    """
+    Set the token
+    :param token:
+    :return:
+    """
+    if not _initialised():
+        return False
+
+    assert isinstance(token, basestring)
+
+    _config['token'] = token
 
 
 def _initialised():
@@ -187,6 +209,7 @@ def _generate_signature(request_method, uri, data=None):
     :param data: dict
     :return: string
     """
+
     if data is None:
         data = {}
 
