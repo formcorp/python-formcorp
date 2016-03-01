@@ -22,6 +22,7 @@ _constants = {
     'REQUEST_TYPE_PUT': 'PUT',
     'HEADER_PARAM_AUTHORIZATION': 'Authorization',
     'HEADER_PARAM_TOKEN': 'Token',
+    'HEADER_PARAM_USER': 'User',
     'HEADER_PARAM_SIGNATURE': 'Signature',
     'HEADER_PARAM_ACCEPT': 'Accept',
     'HEADER_PARAM_BEARER': 'Bearer {0}',
@@ -31,7 +32,7 @@ _constants = {
 }
 
 # Configuration client can alter
-_config = dict(private_key=None, public_key=None, form_id=None, use_ssl=True, token=None)
+_config = dict(private_key=None, public_key=None, form_id=None, use_ssl=True, token=None, user_token=None)
 
 
 def init(private_key, public_key):
@@ -96,6 +97,10 @@ def call(uri, request_method=None, data=None, headers=None):
     # Set the token if required
     if _config['token'] is not None:
         headers[_constants['HEADER_PARAM_TOKEN']] = _config['token']
+
+    # Set the user token if required
+    if _config['user_token'] is not None:
+        headers[_constants['HEADER_PARAM_USER']] = _config['user_token']
 
     # Initialise the connection
     if _config['use_ssl']:
@@ -167,6 +172,20 @@ def set_token(token):
     _config['token'] = token
 
 
+def set_user_token(token):
+    """
+    Set the user token header
+    :param token:
+    :return:
+    """
+    if not _initialised():
+        return False
+
+    assert isinstance(token, basestring)
+
+    _config['user_token'] = token
+
+
 def _initialised():
     """
     Checks to see if the API has been properly initialised
@@ -218,11 +237,14 @@ def _generate_signature(request_method, uri, data=None):
         for attr, value in data.iteritems():
             data[attr] = str(value)
 
+    # For uniformity, need to order the data alphabetically
+    ordered_data = OrderedDict(sorted(data.items(), key=lambda t: t[0]))
+
     # Create an ordered dict (python sorts by key hashes, need to sort in order elements were added)
     obj = OrderedDict()
     obj['method'] = request_method.upper()
     obj['uri'] = uri
-    obj['data'] = data
+    obj['data'] = ordered_data
     plaintext = json.dumps(obj)
 
     plaintext = plaintext.replace('": "', '":"').replace('": {', '":{').replace('": [', '":[').replace('/', '\/').replace('", "', '","')

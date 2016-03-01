@@ -29,6 +29,32 @@ if not token:
 print "Retrieved token: {0}\n".format(token)
 
 formcorp.api.set_token(token)
-test = formcorp.api.call('v2/ping/pong', 'GET')
 
-print test
+# Send a ping
+print "Sending ping"
+ping = formcorp.api.call('v2/ping/ping?pong=pang', 'GET')
+print ping
+
+# Create a user bundle
+print "\nCreate a user bundle"
+bundle = formcorp.api.call('v2/user/create-bundle', 'POST', {
+    "email": "alexb@fishvision.com",
+    "password": "Password12!",
+    "token": "TEST123"
+})
+print bundle
+
+# Set the user token
+user_token = bundle['response']['data']['token']
+print "\nSetting user token to: " + user_token
+formcorp.api.set_user_token(user_token)
+
+# Fetch the user messages
+print "\nFetching user messages"
+messages = formcorp.api.call('v2/messages', 'GET')
+print messages
+
+# Fetch the user messages
+print "\nFetching latest 2 messages"
+messages = formcorp.api.call('v2/messages/index?limit=2', 'GET')
+print messages
